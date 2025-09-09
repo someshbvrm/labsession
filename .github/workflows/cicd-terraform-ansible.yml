@@ -1,8 +1,8 @@
 name: CI - Terraform - Ansible Deploy
 
 on:
-  push:
-    branches: [ main ]
+  #push:
+    #branches: [ main ]
   workflow_dispatch:
     inputs:
       app_repo_url:
