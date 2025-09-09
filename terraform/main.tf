@@ -71,7 +71,7 @@ resource "aws_security_group" "app_sg" {
 }
 
 resource "aws_key_pair" "deployer" {
-  key_name   = "deployer-key"
+  key_name   = "keypair_stockholms"
   public_key = var.ssh_public_key
 }
 
