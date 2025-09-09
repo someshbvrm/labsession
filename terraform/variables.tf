@@ -1,21 +1,16 @@
 variable "aws_region" {
-  description = "AWS region to deploy resources"
+  description = "The AWS region where resources will be created"
   type        = string
+  default     = "eu-north-1" # Stockholm region
 }
 
-variable "vpc_cidr" {
-  description = "CIDR block for the VPC"
+variable "instance_type" {
+  description = "The EC2 instance type"
   type        = string
-  default     = "10.0.0.0/16"
-}
-
-variable "public_subnet_cidr" {
-  description = "CIDR block for the public subnet"
-  type        = string
-  default     = "10.0.1.0/24"
+  default     = "t3.micro"
 }
 
 variable "ssh_public_key" {
-  description = "SSH public key for EC2 access"
+  description = "The public SSH key to be used for EC2 instance access"
   type        = string
 }
