@@ -84,9 +84,8 @@ jobs:
         id: outputs_public_ip
         working-directory: terraform
         run: |
-          IP=$(terraform output -raw instance_public_ip)
+          IP=$(terraform output -raw instance_public_ip | head -n 1 | tr -d '\r')
           echo "instance_ip=$IP" >> $GITHUB_OUTPUT
-
 
   deploy:
     name: Deploy via Ansible
