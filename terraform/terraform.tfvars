@@ -1,2 +1,2 @@
 aws_region = "eu-north-1"
-ssh_public_key = "<your-ssh-public-key>"
+ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC9/7V+hu+awK2n22EIQItqzOyjQYpI4DW4ijE4q7I8G6jHDwSPvB1ewPWFQ56SCw9wYHPMTHgIXTxhTuLRBParmWna4c6X10TbhCVqTiw+B8Hp0ZkdpLCkxPnHcRlAkbjBphhkbUAxhD1+R33hEzcOq9yiTc7L4FIp+QhwjGGca7L+WPqSR19mDu0NCSDAeG3s6iQSdla3I34GZ+Je4il6l1dRpaCpr4OzaFeb9Gxv1oQpIr8aNPyLJryr8/65VRFUClvI+u0oBCIqyWOiDfBoAhaRks3YLUAi/iPIy9eZR//1SuS8/JHKQSGf7xIeoEZe4dW2h32zMZcq3RI3Cv keypair_stockholms"
