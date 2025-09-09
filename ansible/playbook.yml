@@ -1,0 +1,71 @@
+- hosts: all
+  become: true
+  vars:
+    app_user: appuser
+    app_dir: /opt/myapp
+    jar_name: myapp.jar
+    jar_path: "{{ app_dir }}/{{ jar_name }}"
+    service_name: myapp
+    jar_port: 8080
+
+  tasks:
+    - name: Update apt
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install Java
+      apt:
+        name: openjdk-17-jdk
+        state: present
+
+    - name: Ensure app user exists
+      user:
+        name: "{{ app_user }}"
+        system: yes
+        create_home: no
+        shell: /usr/sbin/nologin
+
+    - name: Create app directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0755'
+
+    - name: Copy JAR to server
+      copy:
+        src: "./artifact/{{ jar_name }}"
+        dest: "{{ jar_path }}"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0755'
+
+    - name: Create systemd service for the app
+      copy:
+        dest: /etc/systemd/system/{{ service_name }}.service
+        content: |
+          [Unit]
+          Description=Java App Service
+          After=network.target
+
+          [Service]
+          User={{ app_user }}
+          ExecStart=/usr/bin/java -jar {{ jar_path }}
+          Restart=on-failure
+          LimitNOFILE=65536
+
+          [Install]
+          WantedBy=multi-user.target
+      notify: Reload systemd
+
+    - name: Enable & start service
+      systemd:
+        name: "{{ service_name }}"
+        enabled: yes
+        state: started
+
+  handlers:
+    - name: Reload systemd
+      command: systemctl daemon-reload

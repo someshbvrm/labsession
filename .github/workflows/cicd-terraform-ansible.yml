@@ -1,0 +1,136 @@
+name: CI - Terraform - Ansible Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      app_repo_url:
+        description: 'Git HTTPS URL of Maven project to build'
+        required: true
+        default: 'https://github.com/spring-projects/spring-petclinic.git'
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+
+jobs:
+  build:
+    name: Build JAR (clone app repo & maven)
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-name: app-jar
+    steps:
+      - name: Checkout infra repo
+        uses: actions/checkout@v4
+
+      - name: Clone application source (from input)
+        run: |
+          git clone --depth 1 "${{ github.event.inputs.app_repo_url }}" app-src
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build with Maven (skip tests)
+        working-directory: app-src
+        run: mvn -B package -DskipTests
+
+      - name: Prepare artifact for Ansible
+        run: |
+          mkdir -p ansible/artifact
+          cp app-src/target/*.jar ansible/artifact/myapp.jar
+          ls -l ansible/artifact
+
+      - name: Upload app jar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-jar
+          path: ansible/artifact/myapp.jar
+
+  terraform:
+    name: Terraform Apply
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      public-ip: ${{ steps.outputs_public_ip.outputs.instance_ip }}
+    steps:
+      - name: Checkout infra repo
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init -input=false
+
+      - name: Terraform Apply
+        working-directory: terraform
+        env:
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        run: |
+          terraform apply -auto-approve -input=false
+
+      - name: Read Terraform output (public_ip)
+        id: outputs_public_ip
+        working-directory: terraform
+        run: |
+          echo "instance_ip=$(terraform output -raw public_ip)" >> $GITHUB_OUTPUT
+
+  deploy:
+    name: Deploy via Ansible
+    needs: [terraform, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout infra repo
+        uses: actions/checkout@v4
+
+      - name: Download artifact (jar)
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: ansible/artifact
+
+      - name: Show jar
+        run: ls -l ansible/artifact
+
+      - name: Set INSTANCE_IP env
+        run: echo "INSTANCE_IP=${{ needs.terraform.outputs.public-ip }}" >> $GITHUB_ENV
+
+      - name: Install Ansible and helpers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip sshpass
+          python3 -m pip install --user ansible paramiko
+
+      - name: Prepare SSH private key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Write Ansible inventory
+        run: |
+          cat > ansible/inventory.ini <<EOF
+          [app]
+          ${INSTANCE_IP} ansible_user=ubuntu ansible_python_interpreter=/usr/bin/python3 ansible_private_key_file=~/.ssh/id_rsa
+          EOF
+          cat ansible/inventory.ini
+
+      - name: Run Ansible playbook
+        working-directory: ansible
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+          PATH: ${{ runner.tool_cache }}/python/3.*/x64/bin:$HOME/.local/bin:$PATH
+        run: |
+          export PATH=$HOME/.local/bin:$PATH
+          ansible-playbook -i inventory.ini playbook.yml --ssh-extra-args='-o StrictHostKeyChecking=no'
