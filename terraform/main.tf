@@ -31,7 +31,7 @@ resource "random_id" "id" {
 # Create an AWS key pair using the public key from Jenkins
 resource "aws_key_pair" "deployer" {
   key_name   = "keypair_stockholms"
-  public_key = var.public_key
+  public_key = var.ssh_public_key
 }
 
 # Launch EC2 instance in default VPC & default security group
