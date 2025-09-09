@@ -32,6 +32,10 @@ resource "random_id" "id" {
 resource "aws_key_pair" "deployer" {
   key_name   = "keypair_stockholms"
   public_key = var.ssh_public_key
+  lifecycle {
+    create_before_destroy = true
+    ignore_changes = [public_key]
+  }
 }
 
 # Launch EC2 instance in default VPC & default security group
