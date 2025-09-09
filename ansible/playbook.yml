@@ -36,7 +36,8 @@
 
     - name: Copy JAR to server
       copy:
-        src: "./artifact/{{ jar_name }}"
+        # adjust this path if Jenkins saves artifacts elsewhere
+        src: "./target/{{ jar_name }}"
         dest: "{{ jar_path }}"
         owner: "{{ app_user }}"
         group: "{{ app_user }}"
@@ -54,11 +55,16 @@
           User={{ app_user }}
           ExecStart=/usr/bin/java -jar {{ jar_path }}
           Restart=on-failure
+          StandardOutput=journal
+          StandardError=journal
           LimitNOFILE=65536
 
           [Install]
           WantedBy=multi-user.target
       notify: Reload systemd
+
+    - name: Reload systemd
+      command: systemctl daemon-reload
 
     - name: Enable & start service
       systemd:
@@ -66,6 +72,14 @@
         enabled: yes
         state: started
 
-  handlers:
-    - name: Reload systemd
-      command: systemctl daemon-reload
+    - name: Verify service is active
+      command: systemctl is-active {{ service_name }}
+      register: result
+      changed_when: false
+      failed_when: result.stdout != "active"
+
+    - name: Verify app is listening on port {{ jar_port }}
+      shell: ss -tuln | grep ":{{ jar_port }}"
+      register: port_check
+      changed_when: false
+      failed_when: port_check.rc != 0
