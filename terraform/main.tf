@@ -43,6 +43,13 @@ resource "aws_security_group" "ssh_access" {
     cidr_blocks = ["0.0.0.0/0"] # ⚠️ You can restrict to your own IP for better security
   }
 
+  ingress {
+    description = "SSH from anywhere"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # ⚠️ You can restrict to your own IP for better security
+  }
   egress {
     from_port   = 0
     to_port     = 0
