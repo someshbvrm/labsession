@@ -11,7 +11,7 @@ terraform {
 }
 
 provider "aws" {
-  region = var.region
+  region = var.aws_region
 }
 
 # Get the latest Ubuntu 22.04 AMI from Canonical
