@@ -80,11 +80,13 @@ jobs:
         run: |
           terraform apply -auto-approve -input=false
 
-      - name: Read Terraform output (public_ip)
+      - name: Read Terraform output (instance_public_ip)
         id: outputs_public_ip
         working-directory: terraform
         run: |
-          echo "instance_ip=$(terraform output -raw public_ip)" >> $GITHUB_OUTPUT
+          IP=$(terraform output -raw instance_public_ip)
+          echo "instance_ip=$IP" >> $GITHUB_OUTPUT
+
 
   deploy:
     name: Deploy via Ansible
