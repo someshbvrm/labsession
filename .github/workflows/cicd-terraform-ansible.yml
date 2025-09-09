@@ -23,9 +23,9 @@ jobs:
       - name: Checkout infra repo
         uses: actions/checkout@v4
 
-- name: Clone application source (from input)
-  run: |
-    git clone --depth 1 "${{ github.event.inputs.app_repo_url || 'https://github.com/spring-projects/spring-petclinic.git' }}" app-src
+      - name: Clone application source (from input)
+        run: |
+          git clone --depth 1 "${{ github.event.inputs.app_repo_url || 'https://github.com/spring-projects/spring-petclinic.git' }}" app-src
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
